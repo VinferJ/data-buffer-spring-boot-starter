@@ -48,10 +48,10 @@
         <spring.boot.version>2.7.3</spring.boot.version>
     </properties>
 
-    <build>
+    <!--<build>
         <pluginManagement>
             <plugins>
-                <!-- doc plugin，Maven API Doc generator -->
+                &lt;!&ndash; doc plugin，Maven API Doc generator &ndash;&gt;
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-javadoc-plugin</artifactId>
@@ -66,7 +66,7 @@
                     </executions>
                 </plugin>
 
-                <!-- maven resources plugin -->
+                &lt;!&ndash; maven resources plugin &ndash;&gt;
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-source-plugin</artifactId>
@@ -81,7 +81,7 @@
                     </executions>
                 </plugin>
 
-                <!-- compiler plugin，Maven 编译插件 -->
+                &lt;!&ndash; compiler plugin，Maven 编译插件 &ndash;&gt;
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
@@ -93,7 +93,7 @@
                     </configuration>
                 </plugin>
 
-                <!-- gpg plugin, for sign verification -->
+                &lt;!&ndash; gpg plugin, for sign verification &ndash;&gt;
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-gpg-plugin</artifactId>
@@ -109,7 +109,7 @@
                     </executions>
                 </plugin>
 
-                <!--staging plugin, for auto execute release stage-->
+                &lt;!&ndash;staging plugin, for auto execute release stage&ndash;&gt;
                 <plugin>
                     <groupId>org.sonatype.plugins</groupId>
                     <artifactId>nexus-staging-maven-plugin</artifactId>
@@ -122,7 +122,7 @@
                     </configuration>
                 </plugin>
 
-                <!-- release plugin, for releasing to the release repo -->
+                &lt;!&ndash; release plugin, for releasing to the release repo &ndash;&gt;
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-release-plugin</artifactId>
@@ -141,6 +141,6 @@
             <id>ossrh</id>
             <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
         </repository>
-    </distributionManagement>
+    </distributionManagement>-->
 
 </project>

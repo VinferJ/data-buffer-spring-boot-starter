@@ -19,7 +19,7 @@
 
     <dependencies>
         <dependency>
-            <groupId>com.liquido</groupId>
+            <groupId>group.liquido</groupId>
             <artifactId>data-buffer-core</artifactId>
             <version>1.0</version>
         </dependency>

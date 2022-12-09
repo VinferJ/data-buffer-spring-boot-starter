@@ -88,7 +88,7 @@ public class BufferEventPollerAutoConfiguration {
             }
 
             if (bufferEventPollerProperties.isSchedule()) {
-                Long scheduleDelay = bufferEventPollerProperties.getScheduleDelay();
+                long scheduleDelay = bufferEventPollerProperties.getScheduleDelay();
                 Long schedulePeriod = bufferEventPollerProperties.getSchedulePeriod();
                 taskRunner.runScheduleAtFixedRate(bufferEventPoller::startInScheduleMode, scheduleDelay, schedulePeriod);
             }else {
