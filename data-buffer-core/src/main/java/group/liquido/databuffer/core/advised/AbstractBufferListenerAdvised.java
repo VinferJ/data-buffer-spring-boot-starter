@@ -22,9 +22,9 @@ import java.util.*;
  * @date 2022-12-06 11:02
  */
 @Aspect
-public abstract class AbstractBufferConsumerAdvised extends AbstractMethodAdvised {
+public abstract class AbstractBufferListenerAdvised extends AbstractMethodAdvised {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractBufferConsumerAdvised.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractBufferListenerAdvised.class);
 
     static class BufferConsumeAdvisedContext extends MethodAdvisedContext{
 
@@ -194,7 +194,7 @@ public abstract class AbstractBufferConsumerAdvised extends AbstractMethodAdvise
                 int bufferKeyArgIndex = advisedContext.getBufferKeyArgIndex();
                 int buffersArgIndex = advisedContext.getBuffersArgIndex();
                 finalInvokeArgs[bufferKeyArgIndex] = key;
-                finalInvokeArgs[buffersArgIndex] = resolveBuffersArg(collection, advisedContext.getArgs()[bufferKeyArgIndex]);
+                finalInvokeArgs[buffersArgIndex] = resolveBuffersArg(collection, advisedContext.getArgs()[buffersArgIndex]);
 
                 // proceed joint point
                 try {

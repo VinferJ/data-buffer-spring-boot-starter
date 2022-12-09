@@ -8,7 +8,7 @@ import org.springframework.context.ApplicationListener;
  * @author vinfer
  * @date 2022-12-08 16:35
  */
-public class DefaultBufferConsumerAdvised extends AbstractBufferConsumerAdvised implements ApplicationListener<DataBufferLayerOpenEvent> {
+public class DefaultBufferListenerAdvised extends AbstractBufferListenerAdvised implements ApplicationListener<DataBufferLayerOpenEvent> {
 
     private DataBufferLayer dataBufferLayer;
 

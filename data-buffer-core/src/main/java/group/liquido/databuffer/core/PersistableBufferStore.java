@@ -1,6 +1,7 @@
 package group.liquido.databuffer.core;
 
 import cn.hutool.core.collection.CollectionUtil;
+import group.liquido.databuffer.core.common.SkipCursor;
 import org.springframework.beans.factory.InitializingBean;
 
 import java.util.*;
@@ -18,7 +19,7 @@ public abstract class PersistableBufferStore implements BufferStore, Initializin
 
     private final Set<String> storeBufferKeySet = new HashSet<>();
 
-    private final AtomicInteger skipCursorHolder = new AtomicInteger(0);
+    private final Map<String, AtomicInteger> skipCursorMap = new HashMap<>();
 
     private int bufferSize;
 
@@ -56,20 +57,24 @@ public abstract class PersistableBufferStore implements BufferStore, Initializin
         if (bufferKeyNotFound(bufferKey)) {
             return Collections.emptyList();
         }
-        int currentSkip = skipCursorHolder.get();
-        List<T> list = find(bufferKey, currentSkip, getBufferSize(), bufferType);
-        skipForward(getBufferSize());
+        AtomicInteger bufferSkipCursor = getBufferSkipCursor(bufferKey);
+        List<T> list = find(bufferKey, bufferSkipCursor.get(), getBufferSize(), bufferType);
+        skipForward(bufferKey, getBufferSize());
         return list;
     }
 
-    private void skipForward(int forward) {
-        int forwardSkip = skipCursorHolder.addAndGet(forward);
-        upsertSkipCursor(forwardSkip);
+    private void skipForward(String bufferKey, int forward) {
+        int forwardSkip = getBufferSkipCursor(bufferKey).addAndGet(forward);
+        upsertSkipCursor(bufferKey, forwardSkip);
     }
 
-    private void skipBackward(int backward) {
-        int backwardSkip = Math.max(0, skipCursorHolder.addAndGet(-backward));
-        upsertSkipCursor(backwardSkip);
+    private void skipBackward(String bufferKey, int backward) {
+        int backwardSkip = Math.max(0, getBufferSkipCursor(bufferKey).addAndGet(-backward));
+        upsertSkipCursor(bufferKey, backwardSkip);
+    }
+
+    private AtomicInteger getBufferSkipCursor(String bufferKey) {
+        return skipCursorMap.getOrDefault(bufferKey, new AtomicInteger(0));
     }
 
     @Override
@@ -85,7 +90,7 @@ public abstract class PersistableBufferStore implements BufferStore, Initializin
         while (CollectionUtil.isNotEmpty((buffers = find(bufferKey, (page - 1) * limit, limit, bufferType)))) {
             page+=1;
             remainBuffers.add(buffers);
-            skipForward(limit);
+            skipForward(bufferKey, limit);
         }
 
         return remainBuffers;
@@ -96,7 +101,8 @@ public abstract class PersistableBufferStore implements BufferStore, Initializin
         if (bufferKeyNotFound(bufferKey)) {
             return 0;
         }
-        return Math.toIntExact(count(bufferKey, skipCursorHolder.get()));
+        AtomicInteger bufferSkipCursor = getBufferSkipCursor(bufferKey);
+        return Math.toIntExact(count(bufferKey, bufferSkipCursor.get()));
     }
 
     @Override
@@ -105,7 +111,7 @@ public abstract class PersistableBufferStore implements BufferStore, Initializin
             return;
         }
         remove(bufferKey, size);
-        skipBackward(size);
+        skipBackward(bufferKey, size);
     }
 
     @Override
@@ -119,7 +125,12 @@ public abstract class PersistableBufferStore implements BufferStore, Initializin
 
     @Override
     public void afterPropertiesSet() throws Exception {
-        skipCursorHolder.set(getSkipCursor());
+        List<? extends SkipCursor> allSkipCursors = getAllSkipCursors();
+        if (CollectionUtil.isNotEmpty(allSkipCursors)) {
+            for (SkipCursor skipCursor : allSkipCursors) {
+                skipCursorMap.put(skipCursor.getKey(), new AtomicInteger(skipCursor.getCursor()));
+            }
+        }
     }
 
     protected boolean bufferKeyNotFound(String bufferKey) {
@@ -137,16 +148,17 @@ public abstract class PersistableBufferStore implements BufferStore, Initializin
     /**
      * update skip cursor or insert it when it's not exists, this an extra ability for current service to manage other buffer's meta info.
      * <p> to maintains a skip cursor is preventing data buffers concurrency consuming error.
-     * @param skip  skip cursor to update or save
+     * @param bufferKey     which buffer key's cursor
+     * @param skip          skip cursor to update or save
      */
-    protected abstract void upsertSkipCursor(int skip);
+    protected abstract void upsertSkipCursor(String bufferKey, int skip);
 
     /**
-     * get skip cursor from some table.
-     * <p> if there is no skip cursor exists, here should return 0
-     * @return      skip cursor
+     * get all skip cursors from some table.
+     * <p> if there is no skip cursor exists, current skipCursor should init as 0
+     * @return              skip cursor
      */
-    protected abstract int getSkipCursor();
+    protected abstract List<? extends SkipCursor> getAllSkipCursors();
 
     /**
      * batch save buffer items.

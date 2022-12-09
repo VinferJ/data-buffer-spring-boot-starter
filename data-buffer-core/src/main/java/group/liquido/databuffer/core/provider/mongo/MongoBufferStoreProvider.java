@@ -2,6 +2,7 @@ package group.liquido.databuffer.core.provider.mongo;
 
 import cn.hutool.core.collection.CollectionUtil;
 import group.liquido.databuffer.core.PersistableBufferStore;
+import group.liquido.databuffer.core.common.SkipCursor;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoOperations;
 import org.springframework.data.mongodb.core.query.Query;
@@ -26,7 +27,7 @@ public class MongoBufferStoreProvider extends PersistableBufferStore {
     }
 
     @Override
-    protected void upsertSkipCursor(int skip) {
+    protected void upsertSkipCursor(String bufferKey, int skip) {
         String tableSkipCursor = getTableSkipCursor();
         Query query = new Query();
         Update update = Update.update("cursor", skip);
@@ -34,12 +35,8 @@ public class MongoBufferStoreProvider extends PersistableBufferStore {
     }
 
     @Override
-    protected int getSkipCursor() {
-        SkipCursorDocument skipCursorDocument = mongoOperations.findOne(new Query(), SkipCursorDocument.class, getTableSkipCursor());
-        if (null == skipCursorDocument) {
-            return 0;
-        }
-        return skipCursorDocument.getCursor();
+    protected List<SkipCursorDocument> getAllSkipCursors() {
+        return mongoOperations.find(new Query(), SkipCursorDocument.class, getTableSkipCursor());
     }
 
     @Override

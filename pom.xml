@@ -48,6 +48,26 @@
         <spring.boot.version>2.7.3</spring.boot.version>
     </properties>
 
+    <build>
+        <plugins>
+
+            <!-- gen resource jar -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>3.0.1</version>
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
     <!--<build>
         <pluginManagement>
             <plugins>

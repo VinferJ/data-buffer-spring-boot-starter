@@ -5,6 +5,8 @@ import group.liquido.databuffer.core.BufferFlushEventFactory;
 import group.liquido.databuffer.core.BufferFlushListenerRegistry;
 import group.liquido.databuffer.core.BufferStore;
 import group.liquido.databuffer.core.DataBufferLayer;
+import group.liquido.databuffer.core.advised.AbstractBufferListenerAdvised;
+import group.liquido.databuffer.core.advised.DefaultBufferListenerAdvised;
 import group.liquido.databuffer.core.factory.ApplicationBufferFlushEventFactory;
 import group.liquido.databuffer.core.provider.DataBufferLayerProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -26,6 +28,12 @@ public class DataBufferAutoConfiguration {
 
     public DataBufferAutoConfiguration(DataBufferProperties dataBufferProperties) {
         this.dataBufferProperties = dataBufferProperties;
+    }
+
+    @ConditionalOnMissingBean(AbstractBufferListenerAdvised.class)
+    @Bean
+    AbstractBufferListenerAdvised bufferListenerAdvised() {
+        return new DefaultBufferListenerAdvised();
     }
 
     @ConditionalOnMissingBean(BufferFlushEventFactory.class)
