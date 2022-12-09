@@ -1,0 +1,91 @@
+{
+  "properties": [
+    {
+      "name": "liquido.data-buffer.buffer-store.type",
+      "type": "java.lang.String",
+      "description": "inner support store type, configure this type to instant a BufferStore component to store the buffers data, you can see more details in group.liquido.databuffer.core.common.InnerSupportStoreType."
+    },
+
+    {
+      "name": "liquido.data-buffer.buffer-store.conf-meta",
+      "type": "java.util.Map",
+      "description": "configuration metadata for creating a BufferStore component; for built-in components, you need to obey the configuration agreement, you can also use your own factory to resolve this conf-meta to create the BufferStore."
+    },
+
+    {
+      "name": "liquido.data-buffer.buffer-event-poller.listener-work-mode",
+      "type": "java.lang.String",
+      "defaultValue": "pool",
+      "description": "BufferFlushListener work mode in BufferEventPoller, providing tow options, first is 'thread', the poller will create a non-core thread for every listener, second is 'pool', the poller will use a separate ExecutorService to run all listeners ."
+    },
+
+    {
+      "name": "liquido.data-buffer.buffer-event-poller.listener-worker-pool.core",
+      "type": "java.lang.Integer",
+      "defaultValue": 2,
+      "description": "BufferEventPoller's listener worker pool's core thread amount; only effective when listener-work-mode is 'pool'."
+    },
+
+    {
+      "name": "liquido.data-buffer.buffer-event-poller.listener-worker-pool.max",
+      "type": "java.lang.Integer",
+      "defaultValue": 4,
+      "description": "BufferEventPoller's listener worker pool's maximum thread amount; only effective when listener-work-mode is 'pool'."
+    },
+
+    {
+      "name": "liquido.data-buffer.buffer-event-poller.listener-worker-pool.keep-alive",
+      "type": "java.lang.Long",
+      "defaultValue": 1000,
+      "description": "BufferEventPoller's listener worker pool's thread max idle time, the unit is millisecond; only effective when listener-work-mode is 'pool'."
+    },
+
+    {
+      "name": "liquido.data-buffer.buffer-event-poller.enable-lifecycle-poller",
+      "type": "java.lang.Boolean",
+      "defaultValue": true,
+      "description": "register BufferEventPoller as a lifecycle bean, to make poller auto start and close with spring context's lifecycle."
+    },
+
+    {
+      "name": "liquido.data-buffer.buffer-event-poller.auto-start-up",
+      "type": "java.lang.Boolean",
+      "defaultValue": true,
+      "description": "make BufferEventPoller auto startup after spring context refreshed; only effective when enable-lifecycle-poller is false."
+    },
+
+    {
+      "name": "liquido.data-buffer.buffer-event-poller.schedule",
+      "type": "java.lang.Boolean",
+      "defaultValue": false,
+      "description": "make BufferEventPoller run in schedule; if it's enable, you have to at least configure [schedule-period] to make it work."
+    },
+
+    {
+      "name": "liquido.data-buffer.buffer-event-poller.schedule-delay",
+      "type": "java.lang.Long",
+      "defaultValue": 0,
+      "description": "when BufferEventPoller is run in schedule, how long to delay starting running the poller; the timeunit is millisecond."
+    },
+
+    {
+      "name": "liquido.data-buffer.buffer-event-poller.schedule-period",
+      "type": "java.lang.Long",
+      "description": "the interval between tow polling operation when BufferEventPoller is run in schedule; the timeunit is millisecond."
+    },
+
+    {
+      "name": "liquido.data-buffer.buffer-event-poller.poll-interval",
+      "type": "java.lang.Long",
+      "defaultValue": 300,
+      "description": "the interval between tow polling operation in BufferEventPoller; only effective when [schedule] is false."
+    },
+
+    {
+      "name": "liquido.data-buffer.buffer-event-poller.cleaner-scanning-interval",
+      "type": "java.lang.Long",
+      "defaultValue": 30000,
+      "description": "interval between twice scanning operations of the cleaner which is responsible for removing the invalid event of BufferEventPoller; the timeunit is millisecond."
+    }
+  ]
+}
