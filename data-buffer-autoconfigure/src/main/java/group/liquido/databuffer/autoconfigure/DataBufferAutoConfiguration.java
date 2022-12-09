@@ -58,7 +58,7 @@ public class DataBufferAutoConfiguration {
 
     @ConditionalOnMissingBean(AbstractBufferListenerAdvised.class)
     @Bean
-    AbstractBufferListenerAdvised bufferListenerAdvised() {
+    DefaultBufferListenerAdvised bufferListenerAdvised() {
         return new DefaultBufferListenerAdvised();
     }
 

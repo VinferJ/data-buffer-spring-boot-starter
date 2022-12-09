@@ -53,7 +53,7 @@ public class BufferEventPoller extends AbstractEventPoller implements BufferFlus
         private final String bufferKey;
         private final Class<?> fetchType;
         private final long maxWaitForFlushing;
-        private final StopWatch stopWatch;
+        private StopWatch stopWatch;
 
         BufferPollingEvent(BufferStore bufferStore,
                            long maxWaitForFlushing,
@@ -64,8 +64,7 @@ public class BufferEventPoller extends AbstractEventPoller implements BufferFlus
             this.bufferKey = bufferKey;
             this.fetchType = fetchType;
             this.maxWaitForFlushing = maxWaitForFlushing;
-            this.stopWatch = StopWatch.create(bufferKey);
-            stopWatch.start(bufferKey);
+            resumeStopWatch();
         }
 
         @Override
@@ -76,12 +75,24 @@ public class BufferEventPoller extends AbstractEventPoller implements BufferFlus
                 stopWatch.stop();
                 // check max wait (cumulative waiting time)
                 long totalTimeMillis = stopWatch.getTotalTimeMillis();
-                // resume stopWatch
+                // restart stopWatch to accumulate the wait time
                 stopWatch.start(bufferKey);
-                return totalTimeMillis >= maxWaitForFlushing;
+
+                if (totalTimeMillis >= maxWaitForFlushing) {
+                    // resume the stopWatch for recording next accumulating wait time
+                    resumeStopWatch();
+                    return true;
+                }
+
+                return false;
             }
 
             return bufferItemCount >= bufferSize;
+        }
+
+        private void resumeStopWatch() {
+            stopWatch = StopWatch.create(bufferKey);
+            stopWatch.start(bufferKey);
         }
 
         @Override
