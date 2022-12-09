@@ -1,6 +1,20 @@
 {
   "properties": [
     {
+      "name": "liquido.data-buffer.consume-buffer-size",
+      "type": "java.lang.Integer",
+      "defaultValue": 400,
+      "description": "how many data items in one {@code DataBuffer} item, in other words, how many data items are accumulated to start consume."
+    },
+
+    {
+      "name": "liquido.data-buffer.max-wait-for-flushing",
+      "type": "java.lang.Long",
+      "defaultValue": 300000,
+      "description": "maximum waiting time for data buffers flushing; timeunit is millisecond."
+    },
+
+    {
       "name": "liquido.data-buffer.buffer-store.type",
       "type": "java.lang.String",
       "description": "inner support store type, configure this type to instant a BufferStore component to store the buffers data, you can see more details in group.liquido.databuffer.core.common.InnerSupportStoreType."
