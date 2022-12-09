@@ -106,7 +106,8 @@ public abstract class AbstractDataBufferLayer implements DataBufferLayer, Applic
             return;
         }
         // TODO: 2022/12/7 buffer consume info stat
-        closeState.set(false);
+        closeState.set(true);
+        openState.set(false);
         eventPublisher.publishEvent(new DataBufferLayerCloseEvent(new BufferConsumeStat()));
     }
 

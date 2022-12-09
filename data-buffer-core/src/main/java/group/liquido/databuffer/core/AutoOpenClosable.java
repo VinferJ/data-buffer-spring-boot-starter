@@ -4,7 +4,7 @@ package group.liquido.databuffer.core;
  * @author vinfer
  * @date 2022-12-07 16:28
  */
-public interface OpenClosable {
+public interface AutoOpenClosable {
 
     /**
      * means to open some operations or services, resources.

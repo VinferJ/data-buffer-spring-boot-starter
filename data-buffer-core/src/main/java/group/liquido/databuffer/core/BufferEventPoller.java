@@ -209,6 +209,8 @@ public class BufferEventPoller extends AbstractEventPoller implements BufferFlus
         for (String bufferKey : registeredListenerMap.keySet()) {
             doFlushRemainBuffers(bufferKey);
         }
+
+        bufferStore.clearBufferBuckets();
     }
 
     private void doFlushRemainBuffers(String bufferKey) {

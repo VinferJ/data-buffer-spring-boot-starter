@@ -7,13 +7,20 @@ import group.liquido.databuffer.core.BufferStore;
 import group.liquido.databuffer.core.DataBufferLayer;
 import group.liquido.databuffer.core.advised.AbstractBufferListenerAdvised;
 import group.liquido.databuffer.core.advised.DefaultBufferListenerAdvised;
+import group.liquido.databuffer.core.event.listener.ContextClosedEventListener;
+import group.liquido.databuffer.core.event.listener.ContextRefreshedEventListener;
+import group.liquido.databuffer.core.event.listener.DelegateCtxClosedEventListener;
+import group.liquido.databuffer.core.event.listener.DelegateCtxRefreshedEventListener;
 import group.liquido.databuffer.core.factory.ApplicationBufferFlushEventFactory;
 import group.liquido.databuffer.core.provider.DataBufferLayerProvider;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
+
+import java.util.List;
 
 /**
  * @author vinfer
@@ -28,6 +35,25 @@ public class DataBufferAutoConfiguration {
 
     public DataBufferAutoConfiguration(DataBufferProperties dataBufferProperties) {
         this.dataBufferProperties = dataBufferProperties;
+    }
+
+    @ConditionalOnBean(DelegateCtxRefreshedEventListener.class)
+    @Bean
+    ContextRefreshedEventListener contextRefreshedEventListener(List<DelegateCtxRefreshedEventListener> ctxRefreshedEventListeners) {
+        return new ContextRefreshedEventListener(ctxRefreshedEventListeners);
+    }
+
+    @ConditionalOnBean(DelegateCtxClosedEventListener.class)
+    @Bean
+    ContextClosedEventListener contextClosedEventListener(List<DelegateCtxClosedEventListener> ctxClosedEventListeners) {
+        return new ContextClosedEventListener(ctxClosedEventListeners);
+    }
+
+    @Bean
+    DelegateCtxClosedEventListener bufferLayerAutoCloseListener(DataBufferLayer bufferLayer) {
+        return event -> {
+            bufferLayer.close();
+        };
     }
 
     @ConditionalOnMissingBean(AbstractBufferListenerAdvised.class)

@@ -125,10 +125,24 @@ public abstract class PersistableBufferStore implements BufferStore, Initializin
 
     @Override
     public void afterPropertiesSet() throws Exception {
+        checkSkipCursor();
+    }
+
+    private void checkSkipCursor() {
         List<? extends SkipCursor> allSkipCursors = getAllSkipCursors();
         if (CollectionUtil.isNotEmpty(allSkipCursors)) {
             for (SkipCursor skipCursor : allSkipCursors) {
-                skipCursorMap.put(skipCursor.getKey(), new AtomicInteger(skipCursor.getCursor()));
+                int cursor = skipCursor.getCursor();
+                String bufferKey = skipCursor.getKey();
+                skipCursorMap.put(bufferKey, new AtomicInteger(0));
+                // make sure the cursor is 0
+                // if cursor is greater than 0, and this buffer key's data's amount is greater than or equals to cursor,
+                // that means there are dirty data in range of [0, cursor] which should have been removed before service shutdown,
+                // we need remove them here.
+                if (cursor > 0 && count(bufferKey, 0) >= cursor) {
+                    // delete the dirty data
+                    remove(bufferKey, cursor);
+                }
             }
         }
     }

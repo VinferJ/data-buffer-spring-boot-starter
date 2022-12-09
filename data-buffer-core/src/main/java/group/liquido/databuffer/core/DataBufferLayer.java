@@ -12,7 +12,7 @@ import java.util.Collection;
  * @author vinfer
  * @date 2022-12-06 11:12
  */
-public interface DataBufferLayer extends OpenClosable {
+public interface DataBufferLayer extends AutoOpenClosable {
 
     /**
      * put a bufferKey buffer collection to this layer.
