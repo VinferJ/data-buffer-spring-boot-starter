@@ -194,7 +194,7 @@ public abstract class AbstractBufferListenerAdvised extends AbstractMethodAdvise
                 int bufferKeyArgIndex = advisedContext.getBufferKeyArgIndex();
                 int buffersArgIndex = advisedContext.getBuffersArgIndex();
                 finalInvokeArgs[bufferKeyArgIndex] = key;
-                finalInvokeArgs[buffersArgIndex] = resolveBuffersArg(collection, advisedContext.getArgs()[buffersArgIndex]);
+                finalInvokeArgs[buffersArgIndex] = resolveBuffersArg(collection, advisedContext.getParameters()[buffersArgIndex].getType());
 
                 // proceed joint point
                 try {
@@ -208,17 +208,15 @@ public abstract class AbstractBufferListenerAdvised extends AbstractMethodAdvise
         }
     }
 
-    protected Object resolveBuffersArg(Collection<?> buffers, Object originalArg) {
-        Class<?> actualArgType = originalArg.getClass();
-
-        if (actualArgType.isAssignableFrom(Collection.class)) {
+    protected Object resolveBuffersArg(Collection<?> buffers, Class<?> paramType) {
+        if (paramType.isAssignableFrom(Collection.class)) {
             return buffers;
-        }else if (actualArgType.isAssignableFrom(List.class)) {
+        }else if (paramType.isAssignableFrom(List.class)) {
             if (buffers instanceof List) {
                 return (List<?>)buffers;
             }
             return new ArrayList<>(buffers);
-        }else if (actualArgType.isAssignableFrom(Set.class)) {
+        }else if (paramType.isAssignableFrom(Set.class)) {
             if (buffers instanceof Set) {
                 return (Set<?>)buffers;
             }

@@ -5,6 +5,7 @@ import group.liquido.databuffer.core.PersistableBufferStore;
 import group.liquido.databuffer.core.common.SkipCursor;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoOperations;
+import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 
@@ -29,7 +30,8 @@ public class MongoBufferStoreProvider extends PersistableBufferStore {
     @Override
     protected void upsertSkipCursor(String bufferKey, int skip) {
         String tableSkipCursor = getTableSkipCursor();
-        Query query = new Query();
+        Criteria criteria = Criteria.where("key").is(bufferKey);
+        Query query = new Query(criteria);
         Update update = Update.update("cursor", skip);
         mongoOperations.upsert(query, update, SkipCursorDocument.class, tableSkipCursor);
     }
