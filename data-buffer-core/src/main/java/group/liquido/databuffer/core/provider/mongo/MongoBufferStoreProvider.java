@@ -3,6 +3,7 @@ package group.liquido.databuffer.core.provider.mongo;
 import group.liquido.databuffer.core.PersistableBufferStore;
 import group.liquido.databuffer.core.common.SequenceBufferRow;
 import group.liquido.databuffer.core.common.SequenceCursor;
+import org.bson.types.ObjectId;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoOperations;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -110,7 +111,7 @@ public class MongoBufferStoreProvider extends PersistableBufferStore {
 
 
         if (StringUtils.hasText(seqCursor)) {
-            Criteria criteria = Criteria.where("_id").gt(seqCursor);
+            Criteria criteria = Criteria.where("_id").gt(new ObjectId(seqCursor));
             query.addCriteria(criteria);
         }
 
