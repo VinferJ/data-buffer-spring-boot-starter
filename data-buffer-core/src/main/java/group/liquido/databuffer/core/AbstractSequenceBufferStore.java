@@ -4,6 +4,8 @@ import cn.hutool.core.collection.CollectionUtil;
 import group.liquido.databuffer.core.common.SequenceBufferRow;
 import group.liquido.databuffer.core.common.SequenceCursor;
 import group.liquido.databuffer.core.provider.KeyMonitorSafeOperationProvider;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.StringUtils;
 
@@ -19,6 +21,8 @@ public abstract class AbstractSequenceBufferStore implements SequenceBufferStore
     private static final String KEY_FETCH_ALL_CURSORS = "FETCH_ALL_CURSORS";
     protected static final String SEQ_CURSOR_FIELD_KEY = "key";
     protected static final String SEQ_CURSOR_FIELD_SEQ_NO = "seqNo";
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractSequenceBufferStore.class);
 
     private final Set<String> storedBufferKeySet = new HashSet<>();
 
@@ -121,6 +125,10 @@ public abstract class AbstractSequenceBufferStore implements SequenceBufferStore
 
     private <T> void moveSeqCursorForward(String bufferKey, List<? extends SequenceBufferRow<T>> sequenceBufferRows) {
         String nextCursorSeqNo = genNextCursorSeqNo(sequenceBufferRows);
+        if (null == nextCursorSeqNo) {
+            LOGGER.info("AbstractSequenceBufferStore moveSeqCursorForward buffer key {} cursor has reached the end, and the final cursor is {}", bufferKey, sequenceCursorMap.get(bufferKey));
+            return;
+        }
         sequenceCursorMap.put(bufferKey, nextCursorSeqNo);
         upsertCursor(bufferKey, nextCursorSeqNo);
     }
@@ -148,6 +156,9 @@ public abstract class AbstractSequenceBufferStore implements SequenceBufferStore
     }
 
     protected <T> String genNextCursorSeqNo(List<? extends SequenceBufferRow<T>> sequenceBufferRows) {
+        if (CollectionUtil.isEmpty(sequenceBufferRows)) {
+            return null;
+        }
         return CollectionUtil.getLast(sequenceBufferRows).getSeqNo();
     }
 
