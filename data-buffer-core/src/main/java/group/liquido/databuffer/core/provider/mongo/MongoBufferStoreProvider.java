@@ -1,16 +1,16 @@
 package group.liquido.databuffer.core.provider.mongo;
 
-import cn.hutool.core.collection.CollectionUtil;
 import group.liquido.databuffer.core.PersistableBufferStore;
-import group.liquido.databuffer.core.common.SkipCursor;
+import group.liquido.databuffer.core.common.SequenceBufferRow;
+import group.liquido.databuffer.core.common.SequenceCursor;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoOperations;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
+import org.springframework.util.StringUtils;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -23,36 +23,42 @@ public class MongoBufferStoreProvider extends PersistableBufferStore {
 
     private final MongoOperations mongoOperations;
 
-    public <T> MongoBufferStoreProvider(MongoOperations mongoOperations) {
+    public MongoBufferStoreProvider(MongoOperations mongoOperations) {
         this.mongoOperations = mongoOperations;
     }
 
     @Override
-    protected void upsertSkipCursor(String bufferKey, int skip) {
-        String tableSkipCursor = getTableSkipCursor();
-        Criteria criteria = Criteria.where("key").is(bufferKey);
+    public void upsertCursor(String bufferKey, String seqCursor) {
+        String seqCursorTableName = getSeqCursorTableName();
+        Criteria criteria = Criteria.where(SEQ_CURSOR_FIELD_KEY).is(bufferKey);
         Query query = new Query(criteria);
-        Update update = Update.update("cursor", skip);
-        mongoOperations.upsert(query, update, SkipCursorDocument.class, tableSkipCursor);
+        Update update = Update.update(SEQ_CURSOR_FIELD_SEQ_NO, seqCursor);
+        mongoOperations.upsert(query, update, SequenceCursorDocument.class, seqCursorTableName);
     }
 
     @Override
-    protected List<SkipCursorDocument> getAllSkipCursors() {
-        return mongoOperations.find(new Query(), SkipCursorDocument.class, getTableSkipCursor());
+    protected SequenceCursor doFetchCurrentCursor(String key) {
+        String seqCursorTableName = getSeqCursorTableName();
+        Criteria criteria = Criteria.where(SEQ_CURSOR_FIELD_KEY).is(key);
+        Query query = new Query(criteria);
+        return mongoOperations.findOne(query, SequenceCursorDocument.class, seqCursorTableName);
     }
 
     @Override
-    protected <T> void save(String tableName, Collection<T> collection) {
-        if (CollectionUtil.isEmpty(collection)) {
-            return;
-        }
+    protected List<? extends SequenceCursor> doFetchAllCursors() {
+        String seqCursorTableName = getSeqCursorTableName();
+        Query query = new Query();
+        return mongoOperations.find(query, SequenceCursorDocument.class, seqCursorTableName);
+    }
 
-        // convert to mongoBuffers
-        List<RowMongoBufferDocument<T>> mongoBuffers = collection.stream()
-                .map(this::toRowMongoBuffer)
-                .collect(Collectors.toList());
+    @Override
+    protected <T> void save(String tableName, Collection<SequenceBufferRow<T>> collection) {
+        mongoOperations.insert(collection, tableName);
+    }
 
-        mongoOperations.insert(mongoBuffers, tableName);
+    @Override
+    public <T> SequenceBufferRow<T> createSequenceBufferRow(T bufferItem) {
+        return toRowMongoBuffer(bufferItem);
     }
 
     @Override
@@ -60,42 +66,55 @@ public class MongoBufferStoreProvider extends PersistableBufferStore {
         // mongo collection will be auto created, do nothing here.
     }
 
-    @SuppressWarnings({"rawtypes", "unchecked"})
     @Override
-    protected <T> List<T> find(String tableName, int skip, int limit, Class<T> rowType) {
-        Query query = new Query();
-        query.with(Sort.by(Sort.Direction.ASC, "_id"));
-        query.skip(skip);
+    protected SequenceCursor createCursorInstance(String key, String seqNo) {
+        SequenceCursorDocument sequenceCursorDocument = new SequenceCursorDocument();
+        sequenceCursorDocument.setKey(key);
+        sequenceCursorDocument.setSeqNo(seqNo);
+        return sequenceCursorDocument;
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    protected <T> List<? extends SequenceBufferRow<T>> find(String tableName, String seqCursor, int limit, Class<T> rowType) {
+        Query query = genSeqCursorQuery(seqCursor);
         query.limit(limit);
-
-        List<RowMongoBufferDocument> list = mongoOperations.find(query, RowMongoBufferDocument.class, tableName);
-        if (CollectionUtil.isEmpty(list)) {
-            return Collections.emptyList();
-        }
-
-        return list.stream()
-                .map(row -> (T)row.getRow())
+        return mongoOperations.find(query, RowMongoBufferDocument.class, tableName)
+                .stream()
+                .map(row -> (SequenceBufferRow<T>) row)
                 .collect(Collectors.toList());
     }
 
     @Override
-    protected long count(String tableName, int skip) {
-        Query query = new Query();
+    protected SequenceBufferRow<?> findOne(String tableName, int skip) {
+        Query query = genSeqCursorQuery(null);
         query.skip(skip);
-        return mongoOperations.count(query, tableName);
+        query.limit(1);
+        return mongoOperations.findOne(query, RowMongoBufferDocument.class, tableName);
     }
 
     @Override
-    protected void remove(String tableName, int removeCount) {
-        Query query = new Query();
-        query.with(Sort.by(Sort.Direction.ASC, "_id"));
-        query.limit(removeCount);
-        mongoOperations.remove(query, tableName);
+    protected long count(String tableName, String seqCursor) {
+        Query query = genSeqCursorQuery(seqCursor);
+        return mongoOperations.count(query, tableName);
     }
 
     @Override
     protected void dropTable(String tableName) {
         mongoOperations.dropCollection(tableName);
+    }
+
+    private Query genSeqCursorQuery(String seqCursor) {
+        Query query = new Query();
+        query.with(Sort.by(Sort.Direction.ASC, "_id"));
+
+
+        if (StringUtils.hasText(seqCursor)) {
+            Criteria criteria = Criteria.where("_id").gt(seqCursor);
+            query.addCriteria(criteria);
+        }
+
+        return query;
     }
 
     private <T> RowMongoBufferDocument<T> toRowMongoBuffer(T item) {

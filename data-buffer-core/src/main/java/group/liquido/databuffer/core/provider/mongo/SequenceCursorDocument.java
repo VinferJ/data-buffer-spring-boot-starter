@@ -1,15 +1,15 @@
 package group.liquido.databuffer.core.provider.mongo;
 
-import group.liquido.databuffer.core.common.SkipCursor;
+import group.liquido.databuffer.core.common.SequenceCursor;
 
 /**
  * @author vinfer
  * @date 2022-12-07 16:19
  */
-public class SkipCursorDocument extends BaseMongoDocument implements SkipCursor {
+public class SequenceCursorDocument extends BaseMongoDocument implements SequenceCursor {
 
     private String key;
-    private Integer cursor;
+    private String seqNo;
 
     public String getKey() {
         return key;
@@ -19,19 +19,19 @@ public class SkipCursorDocument extends BaseMongoDocument implements SkipCursor 
         this.key = key;
     }
 
-    public int getCursor() {
-        return cursor;
+    public String getSeqNo() {
+        return seqNo;
     }
 
-    public void setCursor(int cursor) {
-        this.cursor = cursor;
+    public void setSeqNo(String seqNo) {
+        this.seqNo = seqNo;
     }
 
     @Override
     public String toString() {
-        return "SkipCursorDocument{" +
+        return "SequenceCursorDocument{" +
                 "key='" + key + '\'' +
-                ", cursor=" + cursor +
+                ", seqNo='" + seqNo + '\'' +
                 "} " + super.toString();
     }
 }

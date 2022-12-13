@@ -5,6 +5,7 @@ import cn.hutool.core.date.StopWatch;
 import cn.hutool.core.lang.Pair;
 import group.liquido.databuffer.core.common.BufferFlushListenerWrapper;
 import group.liquido.databuffer.core.common.DelegateDataBuffer;
+import group.liquido.databuffer.core.common.SequenceCursor;
 import group.liquido.databuffer.core.epoll.AbstractEventPoller;
 import group.liquido.databuffer.core.epoll.PollableEvent;
 import group.liquido.databuffer.core.epoll.PollableEventListener;
@@ -83,8 +84,6 @@ public class BufferEventPoller extends AbstractEventPoller implements BufferFlus
                     resumeStopWatch();
                     return true;
                 }
-
-                return false;
             }
 
             return bufferItemCount >= bufferSize;
@@ -99,7 +98,6 @@ public class BufferEventPoller extends AbstractEventPoller implements BufferFlus
         public void finishEvent() {
             // do not mark state as consumed, make this event reusable
             // clean the buffer had been consumed
-            bufferStore.clearBuffers(bufferKey, bufferSize);
         }
 
         public void destroy() {
@@ -118,7 +116,6 @@ public class BufferEventPoller extends AbstractEventPoller implements BufferFlus
         private final String bufferKey;
         private final BufferFlushEventFactory bufferFlushEventFactory;
         private final ApplicationEventPublisher eventPublisher;
-
         private DataBuffer dataBuffer;
 
         BufferEventPublisher(String bufferKey,

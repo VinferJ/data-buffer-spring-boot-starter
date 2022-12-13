@@ -1,25 +1,27 @@
 package group.liquido.databuffer.core;
 
 import cn.hutool.core.collection.CollectionUtil;
-import group.liquido.databuffer.core.common.SkipCursor;
+import group.liquido.databuffer.core.common.SequenceBufferRow;
+import group.liquido.databuffer.core.common.SequenceCursor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
 
-import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.Collection;
+import java.util.List;
+import java.util.Set;
 
 /**
  * @author vinfer
  * @date 2022-12-07 11:45
  */
-public abstract class PersistableBufferStore implements BufferStore, InitializingBean {
+public abstract class PersistableBufferStore extends AbstractSequenceBufferStore implements InitializingBean {
 
-    private static final String TABLE_SKIP_CURSOR = "buffer_skip_cursor";
+    private static final Logger LOGGER = LoggerFactory.getLogger(PersistableBufferStore.class);
+
+    private static final String TABLE_SEQ_CURSOR = "buffer_consume_seq";
 
     private static final int DEFAULT_BUFFER_SIZE = 400;
-
-    private final Set<String> storeBufferKeySet = new HashSet<>();
-
-    private final Map<String, AtomicInteger> skipCursorMap = new HashMap<>();
 
     private int bufferSize;
 
@@ -42,137 +44,61 @@ public abstract class PersistableBufferStore implements BufferStore, Initializin
     }
 
     @Override
-    public <T> void storeBuffers(String bufferKey, Collection<T> bufferItems) {
-        if (!storeBufferKeySet.contains(bufferKey)) {
-            // create a temporary table for each buffer key
-            createTableIfNotExists(bufferKey);
-        }
-
-        storeBufferKeySet.add(bufferKey);
-        save(bufferKey, bufferItems);
+    protected <T> List<? extends SequenceBufferRow<T>> fetchSeqBuffersWithSeqNo(String bufferKey, String seqNo, Class<T> bufferType) {
+        return find(bufferKey, seqNo, getBufferSize(), bufferType);
     }
 
     @Override
-    public <T> Collection<T> fetchBuffers(String bufferKey, Class<T> bufferType) {
-        if (bufferKeyNotFound(bufferKey)) {
-            return Collections.emptyList();
-        }
-        AtomicInteger bufferSkipCursor = getBufferSkipCursor(bufferKey);
-        List<T> list = find(bufferKey, bufferSkipCursor.get(), getBufferSize(), bufferType);
-        skipForward(bufferKey, getBufferSize());
-        return list;
-    }
-
-    private void skipForward(String bufferKey, int forward) {
-        int forwardSkip = getBufferSkipCursor(bufferKey).addAndGet(forward);
-        upsertSkipCursor(bufferKey, forwardSkip);
-    }
-
-    private void skipBackward(String bufferKey, int backward) {
-        int backwardSkip = Math.max(0, getBufferSkipCursor(bufferKey).addAndGet(-backward));
-        upsertSkipCursor(bufferKey, backwardSkip);
-    }
-
-    private AtomicInteger getBufferSkipCursor(String bufferKey) {
-        return skipCursorMap.getOrDefault(bufferKey, new AtomicInteger(0));
+    protected  <T> void doStoreSequenceBuffers(String bufferKey, Collection<SequenceBufferRow<T>> bufferRows) {
+        save(bufferKey, bufferRows);
     }
 
     @Override
-    public <T> List<Collection<T>> fetchAll(String bufferKey, Class<T> bufferType) {
-        if (bufferKeyNotFound(bufferKey)) {
-            return Collections.emptyList();
-        }
-
-        List<Collection<T>> remainBuffers = new ArrayList<>();
-        Collection<T> buffers = null;
-        int page = 1;
-        int limit = getBufferSize();
-        while (CollectionUtil.isNotEmpty((buffers = find(bufferKey, (page - 1) * limit, limit, bufferType)))) {
-            page+=1;
-            remainBuffers.add(buffers);
-            skipForward(bufferKey, limit);
-        }
-
-        return remainBuffers;
-    }
-
-    @Override
-    public int countBufferItem(String bufferKey) {
-        if (bufferKeyNotFound(bufferKey)) {
-            return 0;
-        }
-        AtomicInteger bufferSkipCursor = getBufferSkipCursor(bufferKey);
-        return Math.toIntExact(count(bufferKey, bufferSkipCursor.get()));
-    }
-
-    @Override
-    public void clearBuffers(String bufferKey, int size) {
-        if (bufferKeyNotFound(bufferKey)) {
-            return;
-        }
-        remove(bufferKey, size);
-        skipBackward(bufferKey, size);
+    protected long countWithSeqNo(String bufferKey, String seqNo) {
+        return count(bufferKey, seqNo);
     }
 
     @Override
     public void clearBufferBuckets() {
-        if (CollectionUtil.isNotEmpty(storeBufferKeySet)) {
-            for (String bufferKey : storeBufferKeySet) {
+        dropTable(getSeqCursorTableName());
+        Set<String> storedBufferKeySet = getStoredBufferKeySet();
+        if (CollectionUtil.isNotEmpty(storedBufferKeySet)) {
+            for (String bufferKey : storedBufferKeySet) {
                 dropTable(bufferKey);
             }
         }
     }
 
     @Override
-    public void afterPropertiesSet() throws Exception {
-        checkSkipCursor();
-    }
-
-    private void checkSkipCursor() {
-        List<? extends SkipCursor> allSkipCursors = getAllSkipCursors();
-        if (CollectionUtil.isNotEmpty(allSkipCursors)) {
-            for (SkipCursor skipCursor : allSkipCursors) {
-                int cursor = skipCursor.getCursor();
-                String bufferKey = skipCursor.getKey();
-                skipCursorMap.put(bufferKey, new AtomicInteger(0));
-                // make sure the cursor is 0
-                // if cursor is greater than 0, and this buffer key's data's amount is greater than or equals to cursor,
-                // that means there are dirty data in range of [0, cursor] which should have been removed before service shutdown,
-                // we need remove them here.
-                if (cursor > 0 && count(bufferKey, 0) >= cursor) {
-                    // delete the dirty data
-                    remove(bufferKey, cursor);
-                }
-            }
+    protected SequenceCursor doFetchPositionCursor(String key, int position) {
+        SequenceBufferRow<?> bufferRow = findOne(key, position - 1);
+        if (null != bufferRow) {
+            return createCursorInstance(key, bufferRow.getSeqNo());
         }
-    }
-
-    protected boolean bufferKeyNotFound(String bufferKey) {
-        return !storeBufferKeySet.contains(bufferKey);
+        return null;
     }
 
     /**
-     * common table for save skip cursor
-     * @return      skip cursor's table name
+     * common table for save buffer sequence cursor's data.
+     * @return      sequence cursor's table name
      */
-    protected String getTableSkipCursor() {
-        return TABLE_SKIP_CURSOR;
+    protected String getSeqCursorTableName() {
+        return TABLE_SEQ_CURSOR;
     }
 
-    /**
-     * update skip cursor or insert it when it's not exists, this an extra ability for current service to manage other buffer's meta info.
-     * <p> to maintains a skip cursor is preventing data buffers concurrency consuming error.
-     * @param bufferKey     which buffer key's cursor
-     * @param skip          skip cursor to update or save
-     */
-    protected abstract void upsertSkipCursor(String bufferKey, int skip);
+    protected SequenceCursor createCursorInstance(String key, String seqNo) {
+        return new SequenceCursor() {
+            @Override
+            public String getKey() {
+                return key;
+            }
 
-    /**
-     * get all skip cursors from some table.
-     * <p> if there is no skip cursor exists, current skipCursor should init as 0
-     * @return              skip cursor
-     */
-    protected abstract List<? extends SkipCursor> getAllSkipCursors();
+            @Override
+            public String getSeqNo() {
+                return seqNo;
+            }
+        };
+    }
 
     /**
      * batch save buffer items.
@@ -180,7 +106,7 @@ public abstract class PersistableBufferStore implements BufferStore, Initializin
      * @param collection    buffer items
      * @param <T>           buffer items type
      */
-    protected abstract <T> void save(String tableName, Collection<T> collection);
+    protected abstract <T> void save(String tableName, Collection<SequenceBufferRow<T>> collection);
 
     /**
      * create a temporary table for saving data buffers.
@@ -189,30 +115,31 @@ public abstract class PersistableBufferStore implements BufferStore, Initializin
     protected abstract void createTableIfNotExists(String tableName);
 
     /**
-     * find data buffers from table.
+     * find data buffers from table, which buffer item's sequence no are greater than {@code seqCursor}.
      * @param tableName     table's name
-     * @param skip          skip count
+     * @param seqCursor     sequence cursor of last consume
      * @param limit         limit of result list
      * @param rowType       result's row type
      * @return              buffer item list
      * @param <T>           buffer element's type
      */
-    protected abstract <T> List<T> find(String tableName, int skip, int limit, Class<T> rowType);
+    protected abstract <T> List<? extends SequenceBufferRow<T>> find(String tableName, String seqCursor, int limit, Class<T> rowType);
 
     /**
-     * count how many buffer items already store in this table.
+     * find one {@link SequenceBufferRow} with a skip operation.
      * @param tableName     table's name
-     * @param skip          skip data's count
+     * @param skip          skip count
+     * @return              {@link SequenceBufferRow}
+     */
+    protected abstract SequenceBufferRow<?> findOne(String tableName, int skip);
+
+    /**
+     * count how many buffer items which sequence no are greater than {@code seqCursor} already store in this table.
+     * @param tableName     table's name
+     * @param seqCursor     sequence cursor of last consume
      * @return              buffer item's stored count
      */
-    protected abstract long count(String tableName, int skip);
-
-    /**
-     * remove buffer items from table
-     * @param tableName     table's name
-     * @param removeCount   how many items to remove
-     */
-    protected abstract void remove(String tableName, int removeCount);
+    protected abstract long count(String tableName, String seqCursor);
 
     /**
      * drop a temporary buffer storing table.

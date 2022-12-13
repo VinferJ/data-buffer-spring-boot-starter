@@ -1,5 +1,8 @@
 package group.liquido.databuffer.core;
 
+import cn.hutool.core.collection.CollectionUtil;
+
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
@@ -56,14 +59,19 @@ public interface BufferStore {
      * @return              list of buffer items, list's element is a buffer item collection, and its size is equals to or less than {@link #getBufferSize()}
      * @param <T>           buffer item's element type
      */
-    <T> List<Collection<T>> fetchAll(String bufferKey, Class<T> bufferType);
+    default <T> List<Collection<T>> fetchAll(String bufferKey, Class<T> bufferType) {
+        List<Collection<T>> remainBuffers = new ArrayList<>();
+        Collection<T> buffers;
 
-    /**
-     * clean some buffers for this buffer key.
-     * @param bufferKey     buffer key
-     * @param size          clean size
-     */
-    void clearBuffers(String bufferKey, int size);
+        while (CollectionUtil.isNotEmpty((buffers = fetchBuffers(bufferKey, bufferType)))) {
+            remainBuffers.add(buffers);
+            if (buffers.size() < getBufferSize()) {
+                break;
+            }
+        }
+
+        return remainBuffers;
+    }
 
     /**
      * buffer data maybe store in a logic bucket, and maybe buffer store will create bucket for each buffer key,
