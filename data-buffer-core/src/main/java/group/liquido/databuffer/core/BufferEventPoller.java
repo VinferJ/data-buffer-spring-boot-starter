@@ -80,6 +80,8 @@ public class BufferEventPoller extends AbstractEventPoller implements BufferFlus
                 stopWatch.start(bufferKey);
 
                 if (totalTimeMillis >= maxWaitForFlushing) {
+                    // 等待时间已经超过了最大等待时长
+                    LOGGER.info("BufferPollingEvent isReady the waiting time {} has exceeded the maximum waiting time {}, event will be ready now", totalTimeMillis, maxWaitForFlushing);
                     // resume the stopWatch for recording next accumulating wait time
                     resumeStopWatch();
                     return true;
