@@ -49,33 +49,16 @@
     </properties>
 
     <build>
-        <plugins>
-
-            <!-- gen resource jar -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-source-plugin</artifactId>
-                <version>3.0.1</version>
-                <executions>
-                    <execution>
-                        <id>attach-sources</id>
-                        <goals>
-                            <goal>jar</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>
-    </build>
-
-    <!--<build>
         <pluginManagement>
             <plugins>
-                &lt;!&ndash; doc plugin，Maven API Doc generator &ndash;&gt;
+                <!-- doc plugin，Maven API Doc generator -->
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-javadoc-plugin</artifactId>
                     <version>3.1.0</version>
+                    <configuration>
+                        <javadocExecutable>${java.home}/../bin/javadoc</javadocExecutable>
+                    </configuration>
                     <executions>
                         <execution>
                             <id>attach-javadocs</id>
@@ -86,7 +69,7 @@
                     </executions>
                 </plugin>
 
-                &lt;!&ndash; maven resources plugin &ndash;&gt;
+                <!-- maven resources plugin -->
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-source-plugin</artifactId>
@@ -101,7 +84,7 @@
                     </executions>
                 </plugin>
 
-                &lt;!&ndash; compiler plugin，Maven 编译插件 &ndash;&gt;
+                <!-- compiler plugin，Maven 编译插件 -->
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
@@ -113,7 +96,7 @@
                     </configuration>
                 </plugin>
 
-                &lt;!&ndash; gpg plugin, for sign verification &ndash;&gt;
+                <!-- gpg plugin, for sign verification -->
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-gpg-plugin</artifactId>
@@ -129,7 +112,7 @@
                     </executions>
                 </plugin>
 
-                &lt;!&ndash;staging plugin, for auto execute release stage&ndash;&gt;
+                <!--staging plugin, for auto execute release stage-->
                 <plugin>
                     <groupId>org.sonatype.plugins</groupId>
                     <artifactId>nexus-staging-maven-plugin</artifactId>
@@ -142,7 +125,7 @@
                     </configuration>
                 </plugin>
 
-                &lt;!&ndash; release plugin, for releasing to the release repo &ndash;&gt;
+                <!-- release plugin, for releasing to the release repo -->
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-release-plugin</artifactId>
@@ -161,6 +144,6 @@
             <id>ossrh</id>
             <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
         </repository>
-    </distributionManagement>-->
+    </distributionManagement>
 
 </project>
