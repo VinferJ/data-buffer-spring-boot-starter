@@ -28,7 +28,7 @@ public abstract class PollableEvent {
     /**
      * finishes this event, in case reconsume in next round event polling before this event is kicked out from event list.
      */
-    public void finishEvent() {
+    public void commit() {
         state.set(STATE_FINISHED);
     }
 

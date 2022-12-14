@@ -62,7 +62,8 @@ public abstract class AbstractEventPoller extends AbstractStatefulService {
     @Override
     protected void startInternal() throws Throwable {
         // start polling
-        LOGGER.info("AbstractEventPoller startInternal poller service starting...");
+        LOGGER.info("AbstractEventPoller startInternal poller service started...");
+
         while (isRunning()) {
             doPolling();
 
@@ -70,6 +71,7 @@ public abstract class AbstractEventPoller extends AbstractStatefulService {
                 Thread.sleep(pollingInterval);
             }
         }
+
         LOGGER.info("AbstractEventPoller startInternal poller looping is over...");
     }
 

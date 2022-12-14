@@ -5,7 +5,6 @@ import cn.hutool.core.date.StopWatch;
 import cn.hutool.core.lang.Pair;
 import group.liquido.databuffer.core.common.BufferFlushListenerWrapper;
 import group.liquido.databuffer.core.common.DelegateDataBuffer;
-import group.liquido.databuffer.core.common.SequenceCursor;
 import group.liquido.databuffer.core.epoll.AbstractEventPoller;
 import group.liquido.databuffer.core.epoll.PollableEvent;
 import group.liquido.databuffer.core.epoll.PollableEventListener;
@@ -80,8 +79,8 @@ public class BufferEventPoller extends AbstractEventPoller implements BufferFlus
                 stopWatch.start(bufferKey);
 
                 if (totalTimeMillis >= maxWaitForFlushing) {
-                    // 等待时间已经超过了最大等待时长
-                    LOGGER.info("BufferPollingEvent isReady the waiting time {} has exceeded the maximum waiting time {}, event will be ready now", totalTimeMillis, maxWaitForFlushing);
+                    LOGGER.info("BufferPollingEvent isReady the waiting time {} has exceeded the maximum waiting time {}, current count is {} event will be ready now",
+                            totalTimeMillis, maxWaitForFlushing, bufferItemCount);
                     // resume the stopWatch for recording next accumulating wait time
                     resumeStopWatch();
                     return true;
@@ -97,13 +96,13 @@ public class BufferEventPoller extends AbstractEventPoller implements BufferFlus
         }
 
         @Override
-        public void finishEvent() {
+        public void commit() {
             // do not mark state as consumed, make this event reusable
             // clean the buffer had been consumed
         }
 
         public void destroy() {
-            super.finishEvent();
+            super.commit();
         }
 
         @Override
@@ -160,7 +159,7 @@ public class BufferEventPoller extends AbstractEventPoller implements BufferFlus
         public void onEventReady(PollableEvent event) {
             super.onEventReady(event);
             bufferFlushListener.onBufferFlush(getDataBuffer());
-            event.finishEvent();
+            event.commit();
         }
     }
 
