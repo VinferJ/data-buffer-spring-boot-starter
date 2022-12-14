@@ -22,6 +22,7 @@ import org.springframework.util.Assert;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author vinfer
@@ -53,6 +54,7 @@ public class BufferEventPoller extends AbstractEventPoller implements BufferFlus
         private final String bufferKey;
         private final Class<?> fetchType;
         private final long maxWaitForFlushing;
+        private final AtomicInteger bufferCounter;
         private StopWatch stopWatch;
 
         BufferPollingEvent(BufferStore bufferStore,
@@ -64,6 +66,7 @@ public class BufferEventPoller extends AbstractEventPoller implements BufferFlus
             this.bufferKey = bufferKey;
             this.fetchType = fetchType;
             this.maxWaitForFlushing = maxWaitForFlushing;
+            this.bufferCounter = new AtomicInteger(0);
             resumeStopWatch();
         }
 
@@ -83,9 +86,12 @@ public class BufferEventPoller extends AbstractEventPoller implements BufferFlus
                             totalTimeMillis, maxWaitForFlushing, bufferItemCount);
                     // resume the stopWatch for recording next accumulating wait time
                     resumeStopWatch();
+                    bufferCounter.addAndGet(bufferItemCount);
                     return true;
                 }
             }
+
+            bufferCounter.addAndGet(bufferItemCount);
 
             return bufferItemCount >= bufferSize;
         }
@@ -97,12 +103,14 @@ public class BufferEventPoller extends AbstractEventPoller implements BufferFlus
 
         @Override
         public void commit() {
-            // do not mark state as consumed, make this event reusable
-            // clean the buffer had been consumed
+            // do not mark state as committed, make this event reusable
+            // 假装事件提交
+            LOGGER.info("BufferPollingEvent commit fake event submission, event will be reconsume in next ready state, already consumed buffer count {}, ", bufferCounter.get());
         }
 
         public void destroy() {
             super.commit();
+            LOGGER.info("BufferPollingEvent destroy event has been committed, already consumed buffer count {}", bufferCounter.get());
         }
 
         @Override
@@ -213,6 +221,11 @@ public class BufferEventPoller extends AbstractEventPoller implements BufferFlus
     public void flushRemainsBuffers() {
         if (CollectionUtil.isEmpty(registeredListenerMap)) {
             return;
+        }
+
+        // commit all pollable events
+        for (PollableEvent event : pollableEventMap.values()) {
+            ((BufferPollingEvent)event).destroy();
         }
 
         for (String bufferKey : registeredListenerMap.keySet()) {

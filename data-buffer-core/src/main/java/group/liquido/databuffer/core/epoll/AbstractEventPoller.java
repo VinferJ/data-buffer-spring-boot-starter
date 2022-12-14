@@ -108,7 +108,7 @@ public abstract class AbstractEventPoller extends AbstractStatefulService {
         while (isRunning()) {
             eventList.removeIf(eventPair -> {
                 PollableEvent pollableEvent = eventPair.getKey();
-                return pollableEvent.isFinished();
+                return pollableEvent.isCommitted();
             });
 
             if (cleanerScanningInterval > 0) {

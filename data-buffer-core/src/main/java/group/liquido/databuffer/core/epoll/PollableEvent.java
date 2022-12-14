@@ -11,7 +11,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public abstract class PollableEvent {
 
     private static final int STATE_WAIT_READY = 0;
-    private static final int STATE_FINISHED = 1;
+    private static final int STATE_COMMITTED = 1;
 
     private final AtomicInteger state = new AtomicInteger(STATE_WAIT_READY);
 
@@ -21,15 +21,15 @@ public abstract class PollableEvent {
      */
     public abstract boolean isReady();
 
-    public boolean isFinished() {
-        return state.get() == STATE_FINISHED;
+    public boolean isCommitted() {
+        return state.get() == STATE_COMMITTED;
     }
 
     /**
-     * finishes this event, in case reconsume in next round event polling before this event is kicked out from event list.
+     * commit this event, in case reconsume in next round event polling before this event is kicked out from event list.
      */
     public void commit() {
-        state.set(STATE_FINISHED);
+        state.set(STATE_COMMITTED);
     }
 
     /**
